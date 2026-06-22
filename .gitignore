@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+config/*.json
+!config/example.json
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*

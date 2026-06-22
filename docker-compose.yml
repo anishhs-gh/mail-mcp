@@ -1,0 +1,19 @@
+services:
+  mail-mcp:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MAIL_MCP_CONFIG: /config/config.json
+    volumes:
+      # Mount config read-only — never commit real credentials
+      - ./config/config.json:/config/config.json:ro
+      # Optional: Docker secrets for credentials
+      # - ./secrets/smtp_pass:/run/secrets/smtp_pass:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

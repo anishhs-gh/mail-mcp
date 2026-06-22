@@ -1,0 +1,122 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Rollback only — enter existing tag (e.g. v0.1.0). Leave empty to use package.json version.'
+        required: false
+        type: string
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE: mail-mcp
+
+jobs:
+  # ── Step 1: Tag ─────────────────────────────────────────────────────────────
+  # Approval gate 1 — create or validate the release tag.
+  # GitHub repo → Settings → Environments → tag → Required reviewers
+  tag:
+    name: Create / Validate Tag
+    runs-on: ubuntu-latest
+    environment: tag
+
+    permissions:
+      contents: write
+
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      exists: ${{ steps.version.outputs.exists }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and tag
+        id: version
+        run: |
+          INPUT="${{ inputs.version }}"
+
+          if [ -n "$INPUT" ]; then
+            # Rollback — validate the tag exists
+            VERSION="$INPUT"
+            if ! git ls-remote --tags origin "$VERSION" | grep -q "refs/tags/$VERSION$"; then
+              echo "Error: tag $VERSION does not exist. Cannot rollback to a non-existent version."
+              exit 1
+            fi
+            echo "Rollback — tag $VERSION exists"
+          else
+            # Normal deploy — read version from package.json
+            VERSION="v$(node -p "require('./package.json').version")"
+            if git ls-remote --tags origin "$VERSION" | grep -q "refs/tags/$VERSION$"; then
+              echo "Tag $VERSION already exists — will redeploy original commit"
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "Creating new tag $VERSION at HEAD"
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag "$VERSION"
+              git push origin "$VERSION"
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        # Only create release for new tags — skip on redeploy or rollback
+        if: ${{ steps.version.outputs.exists == 'false' && inputs.version == '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.value }}
+          generate_release_notes: true
+
+  # ── Step 2: Deploy ──────────────────────────────────────────────────────────
+  # Approval gate 2 — build image from tagged commit and deploy to Cloud Run.
+  # GitHub repo → Settings → Environments → production → Required reviewers
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: [tag]
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout tagged commit
+        run: git checkout ${{ needs.tag.outputs.version }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE=gcr.io/$PROJECT_ID/$SERVICE:${{ needs.tag.outputs.version }}
+          gcloud builds submit --tag $IMAGE --project $PROJECT_ID
+          gcloud container images add-tag $IMAGE \
+            gcr.io/$PROJECT_ID/$SERVICE:latest --quiet
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE \
+            --image gcr.io/$PROJECT_ID/$SERVICE:${{ needs.tag.outputs.version }} \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --update-secrets="DATABASE_URL=DATABASE_URL:latest,API_KEYS=API_KEYS:latest,MAIL_MCP_SECRET=MAIL_MCP_SECRET:latest" \
+            --set-env-vars="SERVER_URL=${{ secrets.SERVER_URL }}" \
+            --project $PROJECT_ID

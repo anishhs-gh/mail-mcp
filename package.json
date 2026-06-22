@@ -1,0 +1,46 @@
+{
+  "name": "mail-mcp",
+  "version": "0.1.0",
+  "description": "Self-hosted MCP server giving AI agents full email capabilities — read, search, send, reply, and manage multi-account inboxes over any SMTP/IMAP provider. Powered by @mailts/core.",
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@mailts/core": "0.4.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^17.4.2",
+    "postgres": "^3.4.9",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.9"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "email",
+    "imap",
+    "smtp",
+    "mail",
+    "ai",
+    "agent",
+    "gmail",
+    "fastmail",
+    "mailts",
+    "self-hosted",
+    "multi-account",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

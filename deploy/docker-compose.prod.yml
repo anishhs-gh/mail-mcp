@@ -1,0 +1,31 @@
+services:
+  mail-mcp:
+    build: ..
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MAIL_MCP_CONFIG: /config/config.json
+    volumes:
+      # Config mounted read-only — never commit real credentials
+      - ./config.json:/config/config.json:ro
+      # Docker secrets for credentials (create with: docker secret create smtp_pass -)
+      # - smtp_pass_secret:/run/secrets/smtp_pass:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Uncomment to use Docker secrets instead of env vars:
+# secrets:
+#   smtp_pass_secret:
+#     external: true
+#     name: smtp_pass
