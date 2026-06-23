@@ -180,11 +180,11 @@ export function registerReadTools(server: McpServer, registry: AccountRegistry) 
           if (uids.length === 0) return ok({ count: 0, messages: [] })
 
           const messages = await session.fetch({ uids, mailbox: mb, textOnly: true })
-          const sorted = messages.sort((a, b) => (a.internalDate?.getTime() ?? 0) - (b.internalDate?.getTime() ?? 0))
+          const sorted = messages.sort((a: import('@mailts/core').ImapMessage, b: import('@mailts/core').ImapMessage) => (a.internalDate?.getTime() ?? 0) - (b.internalDate?.getTime() ?? 0))
 
           return ok({
             count: sorted.length,
-            messages: sorted.map(m => ({
+            messages: sorted.map((m: import('@mailts/core').ImapMessage) => ({
               uid: m.uid,
               messageId: m.envelope.messageId,
               from: m.envelope.from,

@@ -142,7 +142,7 @@ export function registerMailboxTools(server: McpServer, registry: AccountRegistr
           return ok({
             count: changed.length,
             highestModSeq: status.highestModSeq,
-            messages: changed.map(m => ({
+            messages: changed.map((m: import('@mailts/core').ImapMessage) => ({
               uid: m.uid,
               flags: m.flags,
               subject: m.envelope.subject,

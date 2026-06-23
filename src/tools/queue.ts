@@ -74,13 +74,13 @@ export function registerQueueTools(server: McpServer, registry: AccountRegistry)
     async ({ account }) => {
       try {
         const { mail } = registry.get(account)
-        const jobs = mail.queue.dlq.getAll().map(j => ({
+        const jobs = mail.queue.dlq.getAll().map((j) => ({
           id: j.id,
           to: (j.options as unknown as Record<string, unknown>).to,
           subject: (j.options as unknown as Record<string, unknown>).subject,
           attempts: j.attempts,
-          errors: j.errors?.map((e: Error) => e.message),
-          lastAttemptAt: j.lastAttemptAt?.toISOString(),
+          errors: (j.errors as unknown as Error[] | undefined)?.map((e: Error) => e.message),
+          lastAttemptAt: (j.lastAttemptAt as unknown as Date | undefined)?.toISOString(),
         }))
         return ok({ count: jobs.length, jobs })
       } catch (e) { return err((e as Error).message) }

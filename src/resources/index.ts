@@ -51,7 +51,7 @@ export function registerResources(server: McpServer, registry: AccountRegistry) 
         await session.connect()
         try {
           const messages = await session.fetch({ mailbox: decodeURIComponent(mailbox as string), limit: 20 })
-          const data = messages.map(m => ({
+          const data = messages.map((m: import('@mailts/core').ImapMessage) => ({
             uid: m.uid,
             from: m.envelope.from,
             subject: m.envelope.subject,

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AccountRegistry } from '../accounts.js'
+import type { ImapMessage } from '@mailts/core'
 import { ok, err, extractAttachmentMeta } from './helpers.js'
 
 export function registerAttachmentTools(server: McpServer, registry: AccountRegistry) {
@@ -34,7 +35,7 @@ export function registerAttachmentTools(server: McpServer, registry: AccountRegi
           const atts = msgs[0]!.body?.attachments ?? []
           return ok({
             count: atts.length,
-            attachments: atts.map(a => ({
+            attachments: atts.map((a) => ({
               filename: a.filename,
               contentType: a.contentType,
               size: a.size,
@@ -73,7 +74,7 @@ export function registerAttachmentTools(server: McpServer, registry: AccountRegi
               resolve()
             }, clampedTimeout)
 
-            session.idle((msg) => {
+            session.idle((msg: { seq?: number }) => {
               if (msg.seq) newUids.push(msg.seq) // seq as proxy — will refetch by UID range
               clearTimeout(timer)
               session.stopIdle().then(resolve).catch(resolve)
@@ -87,10 +88,10 @@ export function registerAttachmentTools(server: McpServer, registry: AccountRegi
               // Fetch using seq range via a search by UID
             })
             // Filter to new messages
-            const newMsgs = msgs.filter(m => m.uid >= uidNext)
+            const newMsgs = msgs.filter((m: ImapMessage) => m.uid >= uidNext)
             return ok({
               new_messages: newMsgs.length,
-              messages: newMsgs.map(m => ({
+              messages: newMsgs.map((m: ImapMessage) => ({
                 uid: m.uid,
                 from: m.envelope.from,
                 subject: m.envelope.subject,

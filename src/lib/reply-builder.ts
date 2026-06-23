@@ -51,7 +51,7 @@ export function quoteTextBody(msg: ImapMessage): string {
   const env = msg.envelope
   const date = msg.internalDate?.toUTCString() ?? ''
   const from = normalizeAddresses(env.from)[0] ?? ''
-  const quoted = originalText.split('\n').map(l => `> ${l}`).join('\n')
+  const quoted = originalText.split('\n').map((l: string) => `> ${l}`).join('\n')
 
   return `\n\n--- On ${date}, ${from} wrote:\n${quoted}`
 }
