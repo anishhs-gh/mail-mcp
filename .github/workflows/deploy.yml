@@ -106,7 +106,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE=gcr.io/$PROJECT_ID/$SERVICE:${{ needs.tag.outputs.version }}
-          gcloud builds submit --tag $IMAGE --project $PROJECT_ID
+          gcloud builds submit --tag $IMAGE --suppress-logs --project $PROJECT_ID
           gcloud container images add-tag $IMAGE \
             gcr.io/$PROJECT_ID/$SERVICE:latest --quiet
 
