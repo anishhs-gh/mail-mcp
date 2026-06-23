@@ -1,28 +1,22 @@
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
-# Copy mailts source (local dependency)
-COPY ../mailts /mailts
-RUN cd /mailts && npm ci && npm run build:core
-
-COPY . .
+COPY tsconfig*.json ./
+COPY src ./src
 RUN npm run build
 
-# ── Runtime stage ──────────────────────────────────────────────────────────
-FROM node:22-alpine
+# ── Runtime ────────────────────────────────────────────────────────────────────
+FROM node:20-alpine
 WORKDIR /app
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY package.json ./
 
-EXPOSE 3000
-
-# Config file is mounted read-only at runtime:
-#   docker run -v ./config.json:/config/config.json:ro -e MAIL_MCP_CONFIG=/config/config.json ...
 ENV NODE_ENV=production
+EXPOSE 3000
 
 CMD ["node", "dist/server.js"]
