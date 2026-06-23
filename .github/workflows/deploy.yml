@@ -117,6 +117,5 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
-            --update-secrets="DATABASE_URL=DATABASE_URL:latest,API_KEYS=API_KEYS:latest,MAIL_MCP_SECRET=MAIL_MCP_SECRET:latest" \
-            --set-env-vars="SERVER_URL=${{ secrets.SERVER_URL }}" \
+            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }},API_KEYS=${{ secrets.API_KEYS }},MAIL_MCP_SECRET=${{ secrets.MAIL_MCP_SECRET }},SERVER_URL=${{ secrets.SERVER_URL }}" \
             --project $PROJECT_ID
